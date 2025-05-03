@@ -8,4 +8,4 @@ print(sys.argv[0])
 data = dir_h5_to_np("data")
 
 for d in data:
-    print(d[0])
+    print(f"{d['label']} {type(d['keys'])} {type(d['data'])}")

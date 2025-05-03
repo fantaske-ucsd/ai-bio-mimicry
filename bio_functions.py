@@ -30,6 +30,7 @@ import warnings
 #warnings.filterwarnings("ignore")
 
 embed_data = {
+    'label': "",
     'keys': [],
     'data': [],
     'clusters': [],
@@ -196,8 +197,9 @@ def get_random_negative_pairs(df, embed, N, col):
 
 def h5_to_np(h5path):
     with h5py.File(h5path, "r") as h5f:
-        datasets = [np.array(h5f[key]) for key in h5f.keys()]
-        return  np.vstack(datasets)
+        keys = list(h5f.keys())
+        datasets = [np.array(h5f[key]) for key in keys]
+        return  (keys, np.vstack(datasets))
 
 def h5_to_dict(h5file):
     def recursively_load_h5_group(h5_group):
@@ -222,13 +224,19 @@ def get_files_in_dir(fdir):
 
 def dir_h5_to_np(fpath):
     """
-    returns a list of tuples: (file name, np array of embeddings)
+    returns a list of dictionaries
     """
 
-    ret = []
+    r=[]
+
     files = get_files_in_dir(fpath)
     for f in files:
         if f.endswith('.h5') :
-            ret.append( (f, h5_to_np(fpath + '/' + f)) )
+            new = dict(embed_data)
+            ret = h5_to_np(fpath + '/' + f)
+            new['keys'] = list(ret[0])
+            new['data'] = list(ret[1])
+            new['label'] = f.split(".")[0]
+            r.append(new)
 
-    return ret
+    return r
