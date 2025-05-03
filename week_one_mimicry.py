@@ -1,7 +1,11 @@
-#!/Users/nf/.pyenv/bin/python
+#!./venv/bin/python
 
 from bio_functions import *
 import sys
 
-print(sys.argv)
+print(sys.argv[0])
 
+data = dir_h5_to_np("data")
+
+for d in data:
+    print(d[0])

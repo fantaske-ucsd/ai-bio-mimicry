@@ -1,17 +1,4 @@
-# @title Includes
-
-"""
-!pip install umap-learn > /dev/null
-!pip install pandas > /dev/null
-!pip install h5py > /dev/null
-!pip install openpyxl > /dev/null
-!pip install xgboost > /dev/null
-!pip install torch > /dev/null
-!pip install matplotlib > /dev/null
-!pip install seaborn > /dev/null
-!pip install plotly > /dev/null
-!pip install --upgrade scikit-learn xgboost > /dev/null
-"""
+# Function library that may or maynot be useful
 
 import h5py
 from tqdm import tqdm
@@ -39,12 +26,8 @@ import torch
 import torch.nn.functional as F
 import warnings
 
-warnings.filterwarnings("ignore")
-
-#gdir = '/content/drive'
-gdir = '/Users/nf/school'
-fdir = '/PLM_A2/steroid_binding_proteins'
-h5dir = gdir + fdir
+# cleans up output when not debugging
+#warnings.filterwarnings("ignore")
 
 embed_data = {
     'keys': [],
@@ -233,3 +216,19 @@ def get_cos_sim(embed1, embed2):
     t1 = torch.tensor(embed1, dtype=torch.float32).unsqueeze(0)
     t2 = torch.tensor(embed2, dtype=torch.float32).unsqueeze(0)
     return F.cosine_similarity(t1, t2)
+
+def get_files_in_dir(fdir):
+    return [file for file in os.listdir(fdir) if os.path.isfile(os.path.join(fdir, file))]
+
+def dir_h5_to_np(fpath):
+    """
+    returns a list of tuples: (file name, np array of embeddings)
+    """
+
+    ret = []
+    files = get_files_in_dir(fpath)
+    for f in files:
+        if f.endswith('.h5') :
+            ret.append( (f, h5_to_np(fpath + '/' + f)) )
+
+    return ret
