@@ -36,6 +36,9 @@ embed_data = {
     'clusters': [],
 }
 
+def new_embed_data():
+    return embed_data.deepcopy()
+
 def cluster_embeddings(embeddings, distance_threshold):
     """
     Cluster embeddings using a CD-HIT like approach with cosine distance.
@@ -138,18 +141,16 @@ def get_positive_pairs(df, embed, N, col):
         while True :
             val1 = random.choice(df.index.tolist())
             if df.at[val1, col] == 1 :
+                one = embed['keys'].index(val1)
                 break
         # choose a second unique random protein and make sure it interacts
         while True :
             val2 = random.choice(df.index.tolist())
             if df.at[val2, col] == 1 and val2 != val1 :
+                two = embed['keys'].index(val2)
+                res.append((one, two, 1))
                 break
 
-        # convert to indicies
-        one = embed['keys'].index(val1)
-        two = embed['keys'].index(val2)
-        #print(f"({val1}, {val2}), ({one}, {two})")
-        res.append((one, two, 1))
     return res
 
 def get_clustered_hard_negatives(df, embed, N, col):
@@ -182,17 +183,16 @@ def get_random_negative_pairs(df, embed, N, col):
         while True :
             val1 = random.choice(df.index.tolist())
             if df.at[val1, col] == 1 :
+                one = embed['keys'].index(val1)
                 break
         # choose a second unique random protein and make sure it doesn't bind
         while True :
             val2 = random.choice(df.index.tolist())
             if df.at[val2, col] == 0 :
+                two = embed['keys'].index(val2)
+                res.append((one, two, -1))
                 break
 
-        # convert to indicies
-        one = embed['keys'].index(val1)
-        two = embed['keys'].index(val2)
-        res.append((one, two, -1))
     return res
 
 def h5_to_np(h5path):
@@ -224,15 +224,14 @@ def get_files_in_dir(fdir):
 
 def dir_h5_to_np(fpath):
     """
-    returns a list of dictionaries
+    returns a list of embed_data dictionaries
     """
 
     r=[]
-
     files = get_files_in_dir(fpath)
     for f in files:
         if f.endswith('.h5') :
-            new = dict(embed_data)
+            new = new_embed_data()
             ret = h5_to_np(fpath + '/' + f)
             new['keys'] = list(ret[0])
             new['data'] = list(ret[1])
@@ -240,3 +239,6 @@ def dir_h5_to_np(fpath):
             r.append(new)
 
     return r
+
+def xlsx_to_df(xlsx_file):
+    return None
