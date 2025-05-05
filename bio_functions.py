@@ -24,20 +24,24 @@ import pickle
 import seaborn as sns
 import torch
 import torch.nn.functional as F
+import umap.umap_ as umap
+import plotly.express as px
+from sklearn.cluster import KMeans
+
 import warnings
 
 # cleans up output when not debugging
 #warnings.filterwarnings("ignore")
 
 embed_data = {
-    'label': "",
+    'label': [],
     'keys': [],
     'data': [],
     'clusters': [],
 }
 
 def new_embed_data():
-    return embed_data.deepcopy()
+    return embed_data.copy()
 
 def cluster_embeddings(embeddings, distance_threshold):
     """
@@ -222,12 +226,10 @@ def get_cos_sim(embed1, embed2):
 def get_files_in_dir(fdir):
     return [file for file in os.listdir(fdir) if os.path.isfile(os.path.join(fdir, file))]
 
+# returns a list of embed_data dictionaries
 def dir_h5_to_np(fpath):
-    """
-    returns a list of embed_data dictionaries
-    """
-
     r=[]
+
     files = get_files_in_dir(fpath)
     for f in files:
         if f.endswith('.h5') :
@@ -235,10 +237,60 @@ def dir_h5_to_np(fpath):
             ret = h5_to_np(fpath + '/' + f)
             new['keys'] = list(ret[0])
             new['data'] = list(ret[1])
-            new['label'] = f.split(".")[0]
+            new['label'] = [f.split(".")[0]] * len(new['data'])
             r.append(new)
 
     return r
 
+# silences warnings from uploading uniprot xlsx
+warnings.filterwarnings("ignore", category=UserWarning, module="openpyxl")
 def xlsx_to_df(xlsx_file):
-    return None
+    return pd.read_excel(xlsx_file).set_index('Entry')
+
+# returns a list of df's
+def dir_xlsx_to_df(fpath):
+    r=[]
+    files = get_files_in_dir(fpath)
+    for f in files:
+        if f.endswith('.xlsx') :
+            new = xlsx_to_df(fpath + '/' + f)
+            r.append(new)
+
+    return r
+# silences a warning from a library call
+warnings.filterwarnings("ignore", category=FutureWarning, message=".*force_all_finite.*")
+def plot_embed_data(embed, title):
+    # apply UMAP for 2D projection
+    umap_model = umap.UMAP(n_components=2, n_jobs=1, random_state=42)
+    embedding_vectors = embed['data']
+    embedding_2d = umap_model.fit_transform(embedding_vectors)
+
+    # create a DataFrame for plotting
+    plotdf = pd.DataFrame({
+        "Protein": embed['keys'],
+        "UMAP1": embedding_2d[:, 0],
+        "UMAP2": embedding_2d[:, 1],
+        "Cluster": embed['clusters'],
+        "Host": embed['label']
+    })
+
+    # Step 4: Create an interactive scatter plot using Plotly
+    fig = px.scatter(
+        plotdf,
+        x="UMAP1",
+        y="UMAP2",
+        color="Cluster",
+        hover_name="Protein",
+        symbol="Host",
+        title=title,
+        labels={"Protein": "Protein", "UMAP1": "UMAP Dimension 1", "UMAP2": "UMAP Dimension 2", "Host": "Data Source"},
+    )
+
+    # Customize hover and display options
+    fig.update_traces(textposition="top center")
+    fig.update_layout(hovermode="closest", width=1200, height=1000, coloraxis_colorbar=dict(yanchor="top", y=1, x=0,
+                                          ticks="outside"))
+    fig.write_html(title + ".html")
+
+    # Display the interactive plot
+    fig.show()
