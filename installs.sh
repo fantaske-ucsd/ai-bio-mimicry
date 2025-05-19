@@ -20,5 +20,5 @@ pip install seaborn
 pip install plotly
 pip install faiss-cpu
 pip install faiss-gpu
-pip install --upgrade scikit-learn xgboost
+pip install scikit-learn
 
