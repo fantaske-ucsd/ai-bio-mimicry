@@ -1,5 +1,3 @@
-#!./venv/bin/python
-
 from bio_functions import *
 import sys
 
