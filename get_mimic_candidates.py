@@ -12,7 +12,7 @@ print("Device count:", torch.cuda.device_count())
 shard = False
 
 # File paths
-bacteria_h5i_list = ["data/salmonella-unreviewed-5k.h5", "data/listeria-unreviewed-3k.h5", "data/tuberculosis-unreviewed-4k.h5"]
+bacteria_h5_list = ["data/salmonella-unreviewed-5k.h5", "data/listeria-unreviewed-3k.h5", "data/tuberculosis-unreviewed-4k.h5"]
 human_h5 = "data/human-unreviewed-83k.h5"
 
 # Load human embeddings
@@ -23,7 +23,12 @@ with h5py.File(human_h5, 'r') as f:
 human_embeddings = human_embeddings.astype(np.float32)
 faiss.normalize_L2(human_embeddings)
 
-for bacteria_h5 in bacteria_h5i_list :
+gpu_count = faiss.get_num_gpus()
+gpu_resources = [faiss.StandardGpuResources() for _ in range(gpu_count)]
+gpu_options = faiss.GpuMultipleClonerOptions()
+gpu_options.shard = shard  # depending on your goal (sharding vs replication)
+
+for bacteria_h5 in bacteria_h5_list :
 
     # Load embeddings from .h5 files}
     with h5py.File(bacteria_h5, 'r') as f:
@@ -39,15 +44,10 @@ for bacteria_h5 in bacteria_h5i_list :
     # Create FAISS GPU index
     # Check how many GPUs are visible (respects CUDA_VISIBLE_DEVICES)
     try:
-        gpu_count = faiss.get_num_gpus()
         if gpu_count == 0:
             raise RuntimeError("No GPUs available, falling back to CPU mode.")
         
         print(f"Using {gpu_count} GPU(s) for FAISS")
-        gpu_resources = [faiss.StandardGpuResources() for _ in range(gpu_count)]
-        gpu_options = faiss.GpuMultipleClonerOptions()
-        gpu_options.shard = shard  # depending on your goal (sharding vs replication)
-
         cpu_index = faiss.IndexFlatIP(bacteria_embeddings.shape[1])
         cpu_index.add(bacteria_embeddings.astype(np.float32))
         gpu_index = faiss.index_cpu_to_gpu_multiple_py(gpu_resources, cpu_index, gpu_options)
@@ -60,8 +60,8 @@ for bacteria_h5 in bacteria_h5i_list :
         index = faiss.IndexFlatIP(bacteria_embeddings.shape[1])
         index.add(bacteria_embeddings.astype(np.float32))
 
-    # Search: top 100 hits for each human protein
-    top_k = 1000
+    # Search: top_k hits for each human protein
+    top_k = 50
     D, I = index.search(human_embeddings.astype(np.float32), top_k)
 
     # Create results DataFrame
@@ -81,6 +81,6 @@ for bacteria_h5 in bacteria_h5i_list :
                 })
 
     print(f"Low value for {patho_name} is {low}")
-    fn = patho_name + "-human-results.csv"
+    fn = "data/" + patho_name + "-human-results.csv"
     df_hits = pd.DataFrame(results)
     df_hits.to_csv(fn, index=False)
