@@ -6,7 +6,7 @@ python3 -m venv venv || exit
 
 source ./venv/bin/activate
 
-mkdir data
+mkdir -p data/pdb_files
 # download data automatically if possible
 
 pip install umap-learn
