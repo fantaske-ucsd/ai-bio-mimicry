@@ -22,17 +22,17 @@ pdb_df = pd.read_csv(tsv_path, sep='\t', low_memory=False).set_index("SP_PRIMARY
 human_ids = uniprot_df['human_id'].unique()
 human_groups = uniprot_df.groupby('human_id')
 
-for human_id in tqdm(enumerate(human_ids)) :
-    if human_id[1] not in pdb_df.index :
+for human_id in tqdm(human_ids) :
+    if human_id not in pdb_df.index :
         continue
 
-    bac_ids = human_groups.get_group(human_id[1])['bacteria_id'].unique()
-    for bac_id in enumerate(bac_ids) :
-        if bac_id[1] not in pdb_df.index :
+    bac_ids = human_groups.get_group(human_id)['bacteria_id'].unique()
+    for bac_id in bac_ids :
+        if bac_id not in pdb_df.index :
             continue
 
-        t = pdb_df.at[human_id[1], "PDB"]
-        p = pdb_df.at[bac_id[1], "PDB"]
+        t = pdb_df.at[human_id, "PDB"]
+        p = pdb_df.at[bac_id, "PDB"]
 
 #        print(f"h: {human_id} b: {bac_id}")
 
@@ -41,28 +41,21 @@ for human_id in tqdm(enumerate(human_ids)) :
         else:
             tu = []
             tu.append(t)
-#        print(f"Unique human len {len(tu)}")
-#        print(tu)
 
         if not isinstance(p, str):
             pu = p.dropna().unique()
         else:
             pu = []
             pu.append(p)
-#        print(f"Unique pathogen len {len(pu)}")
-#        print(pu)
 
         new_match = dict(match)
-        new_match['uniprot_human_id'] = human_id[1]
-        new_match['uniprot_bac_id'] = bac_id[1]
+        new_match['uniprot_human_id'] = human_id
+        new_match['uniprot_bac_id'] = bac_id
         new_match['pdb_human_ids'] = list(tu)
         new_match['pdb_bac_ids'] = list(pu)
         matches.append(new_match)
 
 print(f"Found {len(matches)} matches")
-
-#print(t.iloc[0])
-#print(p.iloc[0])
 
 """
 # === DOWNLOAD EACH PDB FILE ===
