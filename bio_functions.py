@@ -16,17 +16,19 @@ from sklearn.metrics import accuracy_score
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import precision_score, recall_score, f1_score
 from sklearn.linear_model import LogisticRegression
-from xgboost import XGBClassifier
+#from xgboost import XGBClassifier
 from sklearn.metrics import roc_auc_score, roc_curve
 from sklearn.model_selection import cross_val_score, KFold
 from sklearn.model_selection import LeaveOneOut
 import pickle
-import seaborn as sns
+#import seaborn as sns
 import torch
 import torch.nn.functional as F
 import umap.umap_ as umap
 import plotly.express as px
 from sklearn.cluster import KMeans
+from Bio.Align import substitution_matrices
+from Bio.Align import PairwiseAligner
 
 import warnings
 
@@ -294,3 +296,64 @@ def plot_embed_data(embed, title):
 
     # Display the interactive plot
     fig.show()
+
+def extend_blosum_with_u():
+    base_matrix = substitution_matrices.load("BLOSUM62")
+    amino_acids = list(base_matrix.alphabet)
+
+    if "U" not in amino_acids:
+        amino_acids.append("U")
+
+    # Create new matrix initialized to -float('inf')
+    size = len(amino_acids)
+    mat_array = np.full((size, size), -np.inf)
+    aa_index = {aa: i for i, aa in enumerate(amino_acids)}
+
+    # Copy old scores
+    for (a1, a2), score in base_matrix.items():
+        i, j = aa_index[a1], aa_index[a2]
+        mat_array[i][j] = score
+        mat_array[j][i] = score  # Symmetric
+
+    # Add U↔C and U↔U (assume same as C↔C)
+    cc_score = base_matrix[('C', 'C')]
+    i_u = aa_index['U']
+    i_c = aa_index['C']
+    mat_array[i_u][i_c] = cc_score
+    mat_array[i_c][i_u] = cc_score
+    mat_array[i_u][i_u] = cc_score
+
+    # Return as a proper SubstitutionMatrix object
+    from Bio.Align.substitution_matrices import Array
+    return Array(alphabet="".join(amino_acids), data=mat_array)
+
+def clean_aa_seq(seq):
+    aa = list(extend_blosum_with_u().alphabet)
+    seq.replace('B', 'D').replace('Z', 'E')
+    return ''.join(c for c in seq if c in aa)
+
+def align_sequences(seq1, seq2):
+    seq1 = clean_aa_seq(seq1)
+    seq2 = clean_aa_seq(seq2)
+
+    # Set up the aligner
+    aligner = PairwiseAligner()
+    aligner.substitution_matrix = extend_blosum_with_u()
+    aligner.open_gap_score = -10
+    aligner.extend_gap_score = -0.5
+    aligner.mode = 'global'  # Equivalent to globalds
+    alignments = aligner.align(seq1, seq2)
+
+    top_alignment = alignments[0]
+
+    # Get the full aligned sequences (with gaps)
+    aligned_str = str(top_alignment)
+    lines = aligned_str.split('\n')
+    aligned_seqA = lines[0].strip()
+    aligned_seqB = lines[2].strip()
+
+    matches = sum(a == b for a, b in zip(aligned_seqA, aligned_seqB) if a != '-' and b != '-')
+    identity = matches / len(aligned_seqA) #min(len(seq1), len(seq2))  # or len(aligned_seqA) for alignment-based
+    identity2 = matches / min(len(seq1), len(seq2))  # or len(aligned_seqA) for alignment-based
+
+    return identity, identity2, top_alignment
