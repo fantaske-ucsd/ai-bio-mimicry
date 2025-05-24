@@ -5,13 +5,16 @@ import pandas as pd
 from tqdm import tqdm
 import os
 import torch
+from bio_functions import *
 
 print("Torch sees GPU:", torch.cuda.is_available())
 print("Device count:", torch.cuda.device_count())
+print("CUDA_VISIBLE_DEVICES:", os.environ.get("CUDA_VISIBLE_DEVICES"))
 
 shard = False
 
 # File paths
+#bacteria_h5_list = ["data/listeria-unreviewed-3k.h5", "data/tuberculosis-unreviewed-4k.h5"]
 bacteria_h5_list = ["data/salmonella-unreviewed-5k.h5", "data/listeria-unreviewed-3k.h5", "data/tuberculosis-unreviewed-4k.h5"]
 human_h5 = "data/human-unreviewed-83k.h5"
 
@@ -19,6 +22,8 @@ human_h5 = "data/human-unreviewed-83k.h5"
 with h5py.File(human_h5, 'r') as f:
     human_ids = list(f.keys())
     human_embeddings = np.stack([f[seq_id][:] for seq_id in human_ids])
+
+human_df = xlsx_to_df("data/human.xlsx")
 
 human_embeddings = human_embeddings.astype(np.float32)
 faiss.normalize_L2(human_embeddings)
@@ -62,25 +67,56 @@ for bacteria_h5 in bacteria_h5_list :
 
     # Search: top_k hits for each human protein
     top_k = 50
-    D, I = index.search(human_embeddings.astype(np.float32), top_k)
+    D, I = print("CUDA_VISIBLE_DEVICES:", os.environ.get("CUDA_VISIBLE_DEVICES"))
 
-    # Create results DataFrame
     results = []
     low = 2.0
+
     patho_name = bacteria_h5.split("/")[1].split("-")[0]
+    if "tub" in patho_name :
+        patho_df = xlsx_to_df("data/tub.xlsx")
+    elif  "salm" in patho_name :
+        patho_df = xlsx_to_df("data/salm.xlsx")
+    elif "list" in patho_name :
+        patho_df = xlsx_to_df("data/list.xlsx")
+
+    low_a = 10000.0
+    high_a = 0.000000001
+
     for i, human_id in enumerate(tqdm(human_ids, desc="Formatting results")):
         for j in range(top_k):
             if low > D[i, j] :
                 low = D[i, j]
 
             if D[i, j] >= 0.5 :
+                patho_seq = patho_df.at[bacteria_ids[I[i, j]], "Sequence"]
+                human_seq = human_df.at[human_id, "Sequence"]
+                ident, ident2, ta = align_sequences(human_seq, patho_seq)
+#                print(f"Human: {human_id} {human_seq}\n Pathogen: {bacteria_ids[I[i, j]]} {patho_seq}")
+#                print(f"Score: {ta.score}")
+#                print(f"Identity: {ident:.3f}\n")
+#                print(f"Seq Alignment: {str(ta)}") # lots of output
+
+                if ta.score > high_a :
+                    high_a = ta.score
+
+                if ta.score < low_a :
+                    low_a = ta.score
+
                 results.append({
                     "human_id": human_id,
                     "bacteria_id": bacteria_ids[I[i, j]],
-                    "cosine_similarity": D[i, j]
+                    "human_seq": human_seq,
+                    "bacteria_seq": patho_seq,
+                    "cosine_similarity": D[i, j],
+                    "seq_align_score": ta.score,
+                    "seq_identity_aligned": ident,
+                    "seq_identity_min": ident2,
                 })
 
     print(f"Low value for {patho_name} is {low}")
+    print(f"Lowest align: {low_a}, Highest: {high_a}")
     fn = "data/" + patho_name + "-human-results.csv"
     df_hits = pd.DataFrame(results)
-    df_hits.to_csv(fn, index=False)
+    df_hits.to_excel(fn, index=False)
+#    df_hits.to_csv(fn, index=False)
