@@ -15,6 +15,7 @@ match = {
 }
 
 matches = []
+results = pd.DataFrame()
 
 uniprot_df = pd.read_csv(csv_path)
 pdb_df = pd.read_csv(tsv_path, sep='\t', low_memory=False).set_index("SP_PRIMARY")
@@ -22,38 +23,51 @@ pdb_df = pd.read_csv(tsv_path, sep='\t', low_memory=False).set_index("SP_PRIMARY
 human_ids = uniprot_df['human_id'].unique()
 human_groups = uniprot_df.groupby('human_id')
 
+
 for human_id in tqdm(human_ids) :
     if human_id not in pdb_df.index :
         continue
 
-    bac_ids = human_groups.get_group(human_id)['bacteria_id'].unique()
+    group_df = human_groups.get_group(human_id)
+    bac_ids = group_df['bacteria_id'].unique()
     for bac_id in bac_ids :
         if bac_id not in pdb_df.index :
             continue
 
-        t = pdb_df.at[human_id, "PDB"]
-        p = pdb_df.at[bac_id, "PDB"]
+        zscores = group_df[ (group_df['bacteria_id'] == bac_id) & (group_df['human_id'] == human_id) ]
+        scores = zscores['seq_identity_aligned']
+        for sc in scores :
+            if sc < 0.25 :
+                print(f"Found very disimilar protein, score {sc}")
+                print(f"h: {human_id} b: {bac_id}")
+                print(zscores)
 
-#        print(f"h: {human_id} b: {bac_id}")
+                if results.empty :
+                    results = zscore
+                else :
+                    results = pd.concat(results, zscores)
 
-        if not isinstance(t, str):
-            tu = t.dropna().unique()
-        else:
-            tu = []
-            tu.append(t)
+                t = pdb_df.at[human_id, "PDB"]
+                p = pdb_df.at[bac_id, "PDB"]
 
-        if not isinstance(p, str):
-            pu = p.dropna().unique()
-        else:
-            pu = []
-            pu.append(p)
+                if not isinstance(t, str):
+                    tu = t.dropna().unique()
+                else:
+                    tu = []
+                    tu.append(t)
 
-        new_match = dict(match)
-        new_match['uniprot_human_id'] = human_id
-        new_match['uniprot_bac_id'] = bac_id
-        new_match['pdb_human_ids'] = list(tu)
-        new_match['pdb_bac_ids'] = list(pu)
-        matches.append(new_match)
+                if not isinstance(p, str):
+                    pu = p.dropna().unique()
+                else:
+                    pu = []
+                    pu.append(p)
+
+                new_match = dict(match)
+                new_match['uniprot_human_id'] = human_id
+                new_match['uniprot_bac_id'] = bac_id
+                new_match['pdb_human_ids'] = list(tu)
+                new_match['pdb_bac_ids'] = list(pu)
+                matches.append(new_match)
 
 print(f"Found {len(matches)} matches")
 
