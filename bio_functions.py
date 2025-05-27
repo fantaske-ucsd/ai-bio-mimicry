@@ -357,3 +357,12 @@ def align_sequences(seq1, seq2):
     identity2 = matches / min(len(seq1), len(seq2))  # or len(aligned_seqA) for alignment-based
 
     return identity, identity2, top_alignment
+
+def save_dict_to_pkl(dic, fn) :
+    with open(fn, "wb") as f:
+        pickle.dump(dic, f)
+
+def get_dict_from_pkl(fn) :
+    with open("data.pkl", "rb") as f:
+        loaded_data = pickle.load(f)
+    return loaded_data

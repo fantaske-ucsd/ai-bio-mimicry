@@ -67,7 +67,7 @@ for bacteria_h5 in bacteria_h5_list :
 
     # Search: top_k hits for each human protein
     top_k = 50
-    D, I = print("CUDA_VISIBLE_DEVICES:", os.environ.get("CUDA_VISIBLE_DEVICES"))
+    D, I = index.search(human_embeddings.astype(np.float32), top_k)
 
     results = []
     low = 2.0
@@ -88,7 +88,7 @@ for bacteria_h5 in bacteria_h5_list :
             if low > D[i, j] :
                 low = D[i, j]
 
-            if D[i, j] >= 0.5 :
+            if D[i, j] >= 0.75 :
                 patho_seq = patho_df.at[bacteria_ids[I[i, j]], "Sequence"]
                 human_seq = human_df.at[human_id, "Sequence"]
                 ident, ident2, ta = align_sequences(human_seq, patho_seq)
@@ -114,9 +114,11 @@ for bacteria_h5 in bacteria_h5_list :
                     "seq_identity_min": ident2,
                 })
 
+    print(f"Found {len(results)} hits for {patho_name}")
     print(f"Low value for {patho_name} is {low}")
     print(f"Lowest align: {low_a}, Highest: {high_a}")
-    fn = "data/" + patho_name + "-human-results.csv"
+    fn = "data/" + patho_name + "-human-results.xlsx"
     df_hits = pd.DataFrame(results)
     df_hits.to_excel(fn, index=False)
+#    fn = "data/" + patho_name + "-human-results.csv"
 #    df_hits.to_csv(fn, index=False)
