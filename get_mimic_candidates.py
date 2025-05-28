@@ -29,9 +29,10 @@ human_embeddings = human_embeddings.astype(np.float32)
 faiss.normalize_L2(human_embeddings)
 
 gpu_count = faiss.get_num_gpus()
-gpu_resources = [faiss.StandardGpuResources() for _ in range(gpu_count)]
-gpu_options = faiss.GpuMultipleClonerOptions()
-gpu_options.shard = shard  # depending on your goal (sharding vs replication)
+if gpu_count > 0 :
+    gpu_resources = [faiss.StandardGpuResources() for _ in range(gpu_count)]
+    gpu_options = faiss.GpuMultipleClonerOptions()
+    gpu_options.shard = shard  # depending on your goal (sharding vs replication)
 
 for bacteria_h5 in bacteria_h5_list :
 
