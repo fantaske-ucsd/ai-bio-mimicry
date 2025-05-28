@@ -2,7 +2,13 @@ The scripts rely on the h5 and uniprot data being in a directory data/ which nee
 
 mkdir -p data/pdb_files
 
-to create all nessesary directories.
+to create all nessesary directories. From the google drive download mimicry-2b-dataset.tgz and pdb_chain_uniprot.tsv to data/. Uncompress mimicry-2b-dataset.tgz and rename the uniprot xlsx files to human.xlsx, list.xslx, salm.xlsx and tub.xlsx. The following files can be run as such (no quotes): 'python <file>.py' with no other arguments.
+
+week_one_mimicry.py - visualizes the data in 2D. Colors are clusters and the point symbol indicates the organism
+
+get_mimic_candidates.py - calculates cosine similarity, sequence similarity score via blosum2, and two identity scores
+
+get_pdb.py - takes the output files from get_mimic_candidates.py and creates and saves data to download structures
 
 Conda was used with these libraries:
 
