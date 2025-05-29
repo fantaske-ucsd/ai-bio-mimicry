@@ -7,15 +7,6 @@ from bio_functions import *
 xlsx_path = ["data/tuberculosis-human-results.xlsx", "data/listeria-human-results.xlsx", "data/salmonella-human-results.xlsx"]
 tsv_path = "data/pdb_chain_uniprot.tsv"
 
-match = {
-    'uniprot_human_id' : '',
-    'uniprot_bac_id' : '',
-    'pdb_human_ids' : [],
-    'pdb_bac_ids' : [],
-    "human_pdb_exists": True,
-    "bac_pdb_exists": True,
-}
-
 matches = []
 results = pd.DataFrame()
 
@@ -41,18 +32,14 @@ for x in xlsx_path :
             if bac_id not in pdb_df.index :
                 patho_pdb_exists = False
 
-            zscores = group_df[ (group_df['bacteria_id'] == bac_id) & (group_df['human_id'] == human_id) ]
-            scores = zscores['seq_identity_aligned']
+            row = group_df[ (group_df['bacteria_id'] == bac_id) & (group_df['human_id'] == human_id) ]
+            scores = row['seq_identity_aligned']
             for sc in scores :
                 if sc < 0.25 :
-#                    print(f"Found very disimilar protein, score {sc}")
-#                    print(f"h: {human_id} b: {bac_id}")
-#                    print(zscores)
-
                     if results.empty :
-                        results = zscores
+                        results = row
                     else :
-                        results = pd.concat([results, zscores])
+                        results = pd.concat([results, row])
 
                     if human_pdb_exists :
                         t = pdb_df.at[human_id, "PDB"]
@@ -74,14 +61,14 @@ for x in xlsx_path :
                     else :
                         pu = [] # TODO fill the list with what we need for alphafold
 
-                    new_match = dict(match)
-                    new_match['uniprot_human_id'] = human_id
-                    new_match['uniprot_bac_id'] = bac_id
-                    new_match['pdb_human_ids'] = list(tu)
-                    new_match['pdb_bac_ids'] = list(pu)
-                    new_match['human_pdb_exists'] = human_pdb_exists
-                    new_match['bac_pdb_exists'] = patho_pdb_exists
-                    matches.append(new_match)
+                    matches.append({
+                        'uniprot_human_id' : human_id,
+                        'uniprot_bac_id' : bac_id,
+                        'pdb_human_ids' : list(tu),
+                        'pdb_bac_ids' : list(pu),
+                        'human_pdb_exists' : human_pdb_exists,
+                        'bac_pdb_exists' : patho_pdb_exists,
+                    })
 
     print(f"Found {len(matches)} matches")
 

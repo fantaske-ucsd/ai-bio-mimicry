@@ -14,7 +14,6 @@ print("CUDA_VISIBLE_DEVICES:", os.environ.get("CUDA_VISIBLE_DEVICES"))
 shard = False
 
 # File paths
-#bacteria_h5_list = ["data/listeria-unreviewed-3k.h5", "data/tuberculosis-unreviewed-4k.h5"]
 bacteria_h5_list = ["data/salmonella-unreviewed-5k.h5", "data/listeria-unreviewed-3k.h5", "data/tuberculosis-unreviewed-4k.h5"]
 human_h5 = "data/human-unreviewed-83k.h5"
 
@@ -70,9 +69,6 @@ for bacteria_h5 in bacteria_h5_list :
     top_k = 50
     D, I = index.search(human_embeddings.astype(np.float32), top_k)
 
-    results = []
-    low = 2.0
-
     patho_name = bacteria_h5.split("/")[1].split("-")[0]
     if "tub" in patho_name :
         patho_df = xlsx_to_df("data/tub.xlsx")
@@ -81,6 +77,8 @@ for bacteria_h5 in bacteria_h5_list :
     elif "list" in patho_name :
         patho_df = xlsx_to_df("data/list.xlsx")
 
+    results = []
+    low = 2.0
     low_a = 10000.0
     high_a = 0.000000001
 
@@ -93,10 +91,6 @@ for bacteria_h5 in bacteria_h5_list :
                 patho_seq = patho_df.at[bacteria_ids[I[i, j]], "Sequence"]
                 human_seq = human_df.at[human_id, "Sequence"]
                 ident, ident2, ta = align_sequences(human_seq, patho_seq)
-#                print(f"Human: {human_id} {human_seq}\n Pathogen: {bacteria_ids[I[i, j]]} {patho_seq}")
-#                print(f"Score: {ta.score}")
-#                print(f"Identity: {ident:.3f}\n")
-#                print(f"Seq Alignment: {str(ta)}") # lots of output
 
                 if ta.score > high_a :
                     high_a = ta.score
@@ -121,5 +115,3 @@ for bacteria_h5 in bacteria_h5_list :
     fn = "data/" + patho_name + "-human-results.xlsx"
     df_hits = pd.DataFrame(results)
     df_hits.to_excel(fn, index=False)
-#    fn = "data/" + patho_name + "-human-results.csv"
-#    df_hits.to_csv(fn, index=False)
