@@ -29,6 +29,7 @@ import plotly.express as px
 from sklearn.cluster import KMeans
 from Bio.Align import substitution_matrices
 from Bio.Align import PairwiseAligner
+import requests
 
 import warnings
 
@@ -363,6 +364,43 @@ def save_dict_to_pkl(dic, fn) :
         pickle.dump(dic, f)
 
 def get_dict_from_pkl(fn) :
-    with open("data.pkl", "rb") as f:
-        loaded_data = pickle.load(f)
-    return loaded_data
+    with open(fn, "rb") as f:
+        return pickle.load(f)
+
+def download_pdb(pdb_id, output_dir) :
+    ret = True
+    url = f"https://files.rcsb.org/download/{pdb_id.upper()}.pdb"
+    out_path = os.path.join(output_dir, f"{pdb_id}.pdb")
+    if os.path.exists(out_path):
+        return ret 
+
+    try:
+        response = requests.get(url, timeout = 10)
+        response.raise_for_status()
+        with open(out_path, "w") as f:
+            f.write(response.text)
+#        print(f"Downloaded: {pdb_id}")
+    except Exception as e:
+#        print(f"Failed to download {pdb_id}: {e}")
+        ret = False
+
+    return ret
+
+def download_alphafold_pdb(pdb_id, output_dir) :
+    ret = True
+    url = f"https://alphafold.ebi.ac.uk/files/AF-{pdb_id}-F1-model_v4.pdb"
+    out_path = os.path.join(output_dir, f"{pdb_id}.pdb")
+    if os.path.exists(out_path):
+        return ret
+
+    try:
+        response = requests.get(url, timeout = 10)
+        response.raise_for_status()
+        with open(out_path, "w") as f:
+            f.write(response.text)
+#        print(f"Downloaded: {pdb_id}")
+    except Exception as e:
+#        print(f"Failed to download {pdb_id}: {e}")
+        ret = False
+
+    return ret
