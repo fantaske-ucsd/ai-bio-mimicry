@@ -13,8 +13,9 @@ print("CUDA_VISIBLE_DEVICES:", os.environ.get("CUDA_VISIBLE_DEVICES"))
 
 shard = False
 
-# File paths
+# File paths, choose between reviewed and unreviewed
 bacteria_h5_list = ["data/salmonella-unreviewed-5k.h5", "data/listeria-unreviewed-3k.h5", "data/tuberculosis-unreviewed-4k.h5"]
+#bacteria_h5_list = ["data/salmonella-reviewed-46.h5", "data/listeria-reviewed-1k.h5", "data/tuberculosis-reviewed-2k.h5"]
 human_h5 = "data/human-unreviewed-83k.h5"
 
 # Load human embeddings
