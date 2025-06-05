@@ -10,6 +10,8 @@ get_mimic_candidates.py - calculates cosine similarity, sequence similarity scor
 
 get_pdb.py - takes the output files from get_mimic_candidates.py and creates and saves data to download structures
 
+download_structures.py - takes the output files from get_pdb.py and downloads available pdb files from rcsb.org or alphafold.ebi.ac.uk into data/pdb_files/
+
 Conda was used with these libraries:
 
 # Name                    Version                   Build  Channel
