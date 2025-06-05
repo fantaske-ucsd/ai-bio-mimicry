@@ -367,40 +367,37 @@ def get_dict_from_pkl(fn) :
     with open(fn, "rb") as f:
         return pickle.load(f)
 
-def download_pdb(pdb_id, output_dir) :
+def download_pdb(pdb_id, output_dir, alpha = False, timeout = 10) :
     ret = True
-    url = f"https://files.rcsb.org/download/{pdb_id.upper()}.pdb"
+
+    if alpha :
+        url = f"https://alphafold.ebi.ac.uk/files/AF-{pdb_id}-F1-model_v4.pdb"
+    else :
+        url = f"https://files.rcsb.org/download/{pdb_id.upper()}.pdb"
+
     out_path = os.path.join(output_dir, f"{pdb_id}.pdb")
-    if os.path.exists(out_path):
+    fail_path = out_path[:-3] +"fail"
+
+    fail = os.path.exists(fail_path)
+    exist = os.path.exists(out_path)
+
+    if exist or fail :
         return ret 
 
     try:
-        response = requests.get(url, timeout = 10)
+        response = requests.get(url, timeout = timeout)
         response.raise_for_status()
         with open(out_path, "w") as f:
             f.write(response.text)
-#        print(f"Downloaded: {pdb_id}")
     except Exception as e:
-#        print(f"Failed to download {pdb_id}: {e}")
+        mk_file(fail_path)
         ret = False
 
     return ret
 
-def download_alphafold_pdb(pdb_id, output_dir) :
-    ret = True
-    url = f"https://alphafold.ebi.ac.uk/files/AF-{pdb_id}-F1-model_v4.pdb"
-    out_path = os.path.join(output_dir, f"{pdb_id}.pdb")
-    if os.path.exists(out_path):
-        return ret
-
+def mk_file(fn) :
     try:
-        response = requests.get(url, timeout = 10)
-        response.raise_for_status()
-        with open(out_path, "w") as f:
-            f.write(response.text)
-#        print(f"Downloaded: {pdb_id}")
-    except Exception as e:
-#        print(f"Failed to download {pdb_id}: {e}")
-        ret = False
-
-    return ret
+        with open(fn, "x") as file:
+            file.write("")
+    except FileExistsError :
+        print(f"Skipping {fn}")
