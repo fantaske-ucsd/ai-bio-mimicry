@@ -10,7 +10,7 @@ tsv_path = "data/pdb_chain_uniprot.tsv"
 matches = []
 results = pd.DataFrame()
 
-pdb_df = pd.read_csv(tsv_path, sep='\t', low_memory=False).set_index("SP_PRIMARY")
+pdb_df = pd.read_csv(tsv_path, sep='\t', header=1, low_memory=False).set_index("SP_PRIMARY")
 
 for x in xlsx_path :
     uniprot_df = pd.read_excel(x)
