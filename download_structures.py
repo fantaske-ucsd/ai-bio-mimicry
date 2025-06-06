@@ -1,17 +1,17 @@
 from bio_functions import *
 import multiprocessing as mp
+import time
+import os
 
 pkl_path = ["data/tuberculosis-human-pretmalign.pkl", "data/listeria-human-pretmalign.pkl", "data/salmonella-human-pretmalign.pkl"]
 output_dir = "data/pdb_files/" # pdb file output
 
 def get_all_match_pdb(org, m, output_dir) :
     if m[f"{org}_pdb_exists"] == True :
-        retry = False
         for pdb_id in m[f'pdb_{org}_ids'] :
-            retry |= download_pdb(pdb_id, output_dir, False)
+            download_pdb(pdb_id, output_dir, False)
 
-        if retry :
-            download_pdb(m[f'uniprot_{org}_id'], output_dir, True)
+        download_pdb(m[f'uniprot_{org}_id'], output_dir, True)
     else :
         download_pdb(m[f'uniprot_{org}_id'], output_dir, True)
 
@@ -26,4 +26,11 @@ for p in pkl_path :
     print(f"Length {len(matches)}")
     if __name__ == "__main__":
         with mp.Pool(processes=24) as pool:  # adjust based on your machine
-            pool.map(get_all_pdbs, matches)
+            result = pool.map_async(get_all_pdbs, matches)
+            ready = result.ready()
+            while ready == False :
+                num_files = len([f for f in os.listdir(output_dir) if os.path.isfile(os.path.join(output_dir, f))])
+                print(f"\rFiles Downloaded: {num_files}", end='', flush=True)
+                time.sleep(1)
+                ready = result.ready()
+            print() 
