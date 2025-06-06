@@ -377,7 +377,7 @@ def get_dict_from_pkl(fn) :
         return pickle.load(f)
 
 def download_pdb(pdb_id, output_dir, alpha = False, timeout = 10) :
-    ret = True
+    retry = False
 
     if alpha :
         url = f"https://alphafold.ebi.ac.uk/files/AF-{pdb_id}-F1-model_v4.pdb"
@@ -391,7 +391,7 @@ def download_pdb(pdb_id, output_dir, alpha = False, timeout = 10) :
     exist = os.path.exists(out_path)
 
     if exist or fail :
-        return ret 
+        return retry 
 
     try:
         response = requests.get(url, timeout = timeout)
@@ -400,13 +400,17 @@ def download_pdb(pdb_id, output_dir, alpha = False, timeout = 10) :
             f.write(response.text)
     except Exception as e:
         mk_file(fail_path)
-        ret = False
+        retry = True
 
-    return ret
+    return retry
 
 def mk_file(fn) :
+    ret = True
     try:
         with open(fn, "x") as file:
             file.write("")
     except FileExistsError :
-        print(f"Skipping {fn}")
+#        print(f"Skipping {fn}")
+        ret = False
+
+    return ret
