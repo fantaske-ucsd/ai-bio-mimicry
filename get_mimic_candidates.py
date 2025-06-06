@@ -6,17 +6,26 @@ from tqdm import tqdm
 import os
 import torch
 from bio_functions import *
+import sys
+
+shard = False
+all_prot = True
+bacteria_h5_list = ["data/salmonella-unreviewed-5k.h5", "data/listeria-unreviewed-3k.h5", "data/tuberculosis-unreviewed-4k.h5"]
+human_h5 = "data/human-unreviewed-83k.h5"
+
+argc = len(sys.argv) - 1
+
+if argc > 0 :
+    if sys.argv[1] == "reviewed" :
+        bacteria_h5_list = ["data/salmonella-reviewed-46.h5", "data/listeria-reviewed-1k.h5", "data/tuberculosis-reviewed-2k.h5"]
+        human_h5 = "data/human-reviewed-20k.h5"
+        print("Processing reviewed proteins only")
+else :
+    print("Processing all proteins")
 
 print("Torch sees GPU:", torch.cuda.is_available())
 print("Device count:", torch.cuda.device_count())
 print("CUDA_VISIBLE_DEVICES:", os.environ.get("CUDA_VISIBLE_DEVICES"))
-
-shard = False
-
-# File paths, choose between reviewed and unreviewed
-bacteria_h5_list = ["data/salmonella-unreviewed-5k.h5", "data/listeria-unreviewed-3k.h5", "data/tuberculosis-unreviewed-4k.h5"]
-#bacteria_h5_list = ["data/salmonella-reviewed-46.h5", "data/listeria-reviewed-1k.h5", "data/tuberculosis-reviewed-2k.h5"]
-human_h5 = "data/human-unreviewed-83k.h5"
 
 # Load human embeddings
 with h5py.File(human_h5, 'r') as f:
