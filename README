@@ -6,7 +6,7 @@ to create all nessesary directories. From the google drive download mimicry-2b-d
 
 week_one_mimicry.py - visualizes the data in 2D. Colors are clusters and the point symbol indicates the organism
 
-get_mimic_candidates.py - calculates cosine similarity, sequence similarity score via blosum2, and two identity scores
+get_mimic_candidates.py - calculates cosine similarity, sequence similarity score via blosum2, and two identity scores, pass 'reviewed' to only run reviewed proteins
 
 get_pdb.py - takes the output files from get_mimic_candidates.py and creates and saves data to download structures
 
